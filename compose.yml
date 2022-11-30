@@ -1,0 +1,39 @@
+services:
+
+  mysql:
+    image: mysql:8.0
+    ports:
+      - "3306:3306"
+    volumes:
+      - "db-data:/var/lib/mysql/"
+      - "./mysql/schema.sql:/docker-entrypoint-initdb.d/schema.sql"
+    environment:
+      MYSQL_ROOT_PASSWORD: "secret"
+      MYSQL_DATABASE: "testing"
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch-oss:7.10.2
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - "es-data:/usr/share/elasticsearch/data/"
+    environment:
+      - "discovery.type=single-node"
+
+  fluentd:
+    image: fluent/fluentd:v1.15-1
+    user: root
+    ports:
+      - "24224:24224"
+    volumes:
+      - ./fluentd/fluent.conf/:/etc/fluent/fluent.conf
+      - ./fluentd/Gemfile/:/etc/fluent/Gemfile
+    command: ash -c "apk add build-base mariadb-dev ruby-dev && fluentd --gemfile /etc/fluent/Gemfile"
+    depends_on:
+      - mysql
+      - elasticsearch
+
+volumes:
+  es-data:
+  db-data:
